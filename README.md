@@ -2,15 +2,20 @@
 
 [![UI E2E CI](https://github.com/eelF1k/ui-e2e-automation-python/actions/workflows/ci.yml/badge.svg)](https://github.com/eelF1k/ui-e2e-automation-python/actions/workflows/ci.yml)
 
-Пет-проєкт для демонстрації навичок **Automation Engineer (Python)**: E2E UI тести на **Selenium + Pytest** з патерном **Page Object Model**, артефактами при падіннях та CI.
+Це мій пет-проєкт для демонстрації навичок **Automation Engineer (Python)**.
+Тут я реалізував E2E UI автотести на **Selenium + Pytest** з патерном **Page Object Model**, артефактами при падіннях і CI.
 
-### Стек
+### Що я використав
 - Python
 - Pytest
 - Selenium WebDriver
 
-### Встановлення (Windows / PowerShell)
-Створи venv та встанови залежності:
+### Що потрібно встановити
+- Python 3.12+ (або сумісна версія)
+- Google Chrome
+
+### Як запустити локально (Windows / PowerShell)
+Зроби це по кроках:
 
 ```bash
 py -m venv .venv
@@ -20,7 +25,7 @@ pip install -r requirements.txt
 ```
 
 ### Запуск тестів
-Перед запуском для цього демо-проєкту встанови базову URL:
+Перед запуском встанови `PYTHONPATH` і передай базову URL:
 
 ```bash
 $env:PYTHONPATH="."
@@ -41,10 +46,10 @@ pytest tests/ui/test_auth.py --base-url https://www.saucedemo.com --headless
 ```
 
 ### Структура (high-level)
-- `tests/` — автотести (UI E2E)
-- `docs/` — тест-план, матриця покриття, шаблон баг-репорту
-- `configs/` — конфіги (pytest тощо)
-- `reports/` — артефакти запусків (локально/CI), не комітяться
+- `tests/` — UI E2E автотести
+- `docs/` — test plan, matrix, bug report template
+- `configs/` — pytest конфіги
+- `reports/` — артефакти падінь (локально/CI), не комічу в git
 
 ### CI
 - GitHub Actions workflow: `.github/workflows/ci.yml`
