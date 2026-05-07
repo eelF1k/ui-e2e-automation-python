@@ -1,7 +1,5 @@
 ## UI E2E Automation (Python)
 
-[![UI E2E CI](https://github.com/eelF1k/ui-e2e-automation-python/actions/workflows/ci.yml/badge.svg)](https://github.com/eelF1k/ui-e2e-automation-python/actions/workflows/ci.yml)
-
 Це мій пет-проєкт для демонстрації навичок **Automation Engineer (Python)**.
 Тут я реалізував E2E UI автотести на **Selenium + Pytest** з патерном **Page Object Model**, артефактами при падіннях і CI.
 
@@ -17,12 +15,12 @@
 - Налаштовувати CI в GitHub Actions для автоматичного запуску тестів.
 - Аналізувати падіння через screenshot/page source артефакти.
 
-### Що потрібно встановити
+### Що потрібно встановити для тесту
 - Python 3.12+ (або сумісна версія)
 - Google Chrome
 
 ### Як запустити локально (Windows / PowerShell)
-Зроби це по кроках:
+Зробити це по кроках:
 
 ```bash
 py -m venv .venv
@@ -32,14 +30,14 @@ pip install -r requirements.txt
 ```
 
 ### Запуск тестів
-Перед запуском встанови `PYTHONPATH` і передай базову URL:
+Перед запуском встановити `PYTHONPATH` і передати базову URL:
 
 ```bash
 $env:PYTHONPATH="."
 pytest --base-url https://www.saucedemo.com --headless
 ```
 
-Корисні варіанти запуску:
+Ще варіанти запуску:
 
 ```bash
 # smoke suite
