@@ -1,66 +1,46 @@
-## UI E2E Automation (Python)
+# UI E2E Automation (Python)
 
-Це мій пет-проєкт для демонстрації навичок **Automation Engineer (Python)**.
-Тут я реалізував E2E UI автотести на **Selenium + Pytest** з патерном **Page Object Model**, артефактами при падіннях і CI.
+## Назва проєкту
+UI E2E Automation (Python)
 
-### Що я використав
+## Це мій пет проєкт про...
+Це мій пет проєкт про E2E UI автоматизацію вебзастосунку на Python з Selenium та Pytest.
+
+## Технологічний стек
 - Python
 - Pytest
 - Selenium WebDriver
+- GitHub Actions
 
-### Що я вмію цим проєктом
-- Писати E2E UI автотести на Python + Pytest + Selenium.
-- Будувати фреймворк з Page Object Model і reusable утилітами.
-- Валідувати smoke/regression сценарії для авторизації та checkout flow.
-- Налаштовувати CI в GitHub Actions для автоматичного запуску тестів.
-- Аналізувати падіння через screenshot/page source артефакти.
+## Що реалізовано
+- UI тести для авторизації та базового checkout flow.
+- Патерн Page Object Model.
+- Smoke та regression запуск через pytest markers.
+- Збір артефактів падінь (screenshot/page source).
+- CI запуск тестів у GitHub Actions.
 
-### Що потрібно встановити для тесту
-- Python 3.12+ (або сумісна версія)
+## Структура
+- `tests/` — UI тести
+- `docs/` — тестова документація
+- `configs/` — pytest конфігурація
+- `reports/` — артефакти падінь
+
+## Архітектура
+- Тести викликають сторінкові об'єкти.
+- Сторінкові об'єкти інкапсулюють локатори та дії.
+- Фікстури керують браузером і параметрами запуску.
+
+## Що потрібно встановити для тесту
+- Python 3.12+
 - Google Chrome
 
-### Як запустити локально (Windows / PowerShell)
-Зробити це по кроках:
-
+## Як запустити
 ```bash
 py -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install -U pip
 pip install -r requirements.txt
-```
-
-### Запуск тестів
-Перед запуском встановити `PYTHONPATH` і передати базову URL:
-
-```bash
 $env:PYTHONPATH="."
 pytest --base-url https://www.saucedemo.com --headless
 ```
-
-Ще варіанти запуску:
-
-```bash
-# smoke suite
-pytest -m smoke --base-url https://www.saucedemo.com --headless
-
-# regression suite
-pytest -m regression --base-url https://www.saucedemo.com --headless
-
-# конкретний файл
-pytest tests/ui/test_auth.py --base-url https://www.saucedemo.com --headless
-```
-
-### Структура (high-level)
-- `tests/` — UI E2E автотести
-- `docs/` — test plan, matrix, bug report template
-- `configs/` — pytest конфіги
-- `reports/` — артефакти падінь (локально/CI), не комічу в git
-
-### CI
-- GitHub Actions workflow: `.github/workflows/ci.yml`
-- На кожен `push` / `pull_request` в `master` запускається smoke suite.
-- При падіннях CI публікуються артефакти з `reports/ui_failures/`.
-
-### Статус
-MVP фреймворк готовий: є Page Objects, smoke/regression сьюти, базовий checkout flow, артефакти падінь і CI.
 
