@@ -10,6 +10,13 @@
 - Pytest
 - Selenium WebDriver
 
+### Що я вмію цим проєктом
+- Писати E2E UI автотести на Python + Pytest + Selenium.
+- Будувати фреймворк з Page Object Model і reusable утилітами.
+- Валідувати smoke/regression сценарії для авторизації та checkout flow.
+- Налаштовувати CI в GitHub Actions для автоматичного запуску тестів.
+- Аналізувати падіння через screenshot/page source артефакти.
+
 ### Що потрібно встановити
 - Python 3.12+ (або сумісна версія)
 - Google Chrome
