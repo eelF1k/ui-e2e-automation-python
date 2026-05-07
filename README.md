@@ -1,5 +1,7 @@
 ## UI E2E Automation (Python)
 
+[![UI E2E CI](https://github.com/eelF1k/ui-e2e-automation-python/actions/workflows/ci.yml/badge.svg)](https://github.com/eelF1k/ui-e2e-automation-python/actions/workflows/ci.yml)
+
 Пет-проєкт для демонстрації навичок **Automation Engineer (Python)**: E2E UI тести на **Selenium + Pytest** з патерном **Page Object Model**, артефактами при падіннях та CI.
 
 ### Стек
@@ -44,6 +46,11 @@ pytest tests/ui/test_auth.py --base-url https://www.saucedemo.com --headless
 - `configs/` — конфіги (pytest тощо)
 - `reports/` — артефакти запусків (локально/CI), не комітяться
 
+### CI
+- GitHub Actions workflow: `.github/workflows/ci.yml`
+- На кожен `push` / `pull_request` в `master` запускається smoke suite.
+- При падіннях CI публікуються артефакти з `reports/ui_failures/`.
+
 ### Статус
-Репозиторій ініціалізовано. Далі — поетапне додавання інфраструктури Selenium/pytest і тестів окремими комітами.
+MVP фреймворк готовий: є Page Objects, smoke/regression сьюти, базовий checkout flow, артефакти падінь і CI.
 
