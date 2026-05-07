@@ -7,6 +7,19 @@
 - Pytest
 - Selenium WebDriver
 
+### Встановлення (Windows / PowerShell)
+Створи venv та встанови залежності:
+
+```bash
+py -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install -U pip
+pip install -r requirements.txt
+```
+
+### Запуск тестів (поки що)
+На наступних кроках тут з’являться UI-тести та команди запуску через `pytest`.
+
 ### Структура (high-level)
 - `tests/` — автотести (UI E2E)
 - `docs/` — тест-план, матриця покриття, шаблон баг-репорту
