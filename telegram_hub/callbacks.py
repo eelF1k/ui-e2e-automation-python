@@ -35,7 +35,7 @@ async def on_menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -
             await chat.send_message(text, reply_markup=markup)
 
     if data == "m|hm":
-        await edit("Головне меню — оберіть проєкт або дію.", kb_main())
+        await edit("Головне меню — оберіть проєкт або дію.", kb_main(web_app_url=(settings.telegram_web_app_url or "").strip()))
         return
     if data == "m|p4":
         await edit("Project4 — RAG / ingestion / ops.", kb_p4())
@@ -52,25 +52,25 @@ async def on_menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -
 
     if data == "a|wiz":
         await chat.send_message("Запуск: команду /ingest_wizard або /wiz")
-        await edit("Головне меню:", kb_main())
+        await edit("Головне меню:", kb_main(web_app_url=(settings.telegram_web_app_url or "").strip()))
         return
 
     if data == "a|help":
         await chat.send_message("Командний список: /help або /cmds")
-        await edit("Головне меню:", kb_main())
+        await edit("Головне меню:", kb_main(web_app_url=(settings.telegram_web_app_url or "").strip()))
         return
 
     if data == "a|stat":
         lines = await _collect_status(settings, hub)
         await chat.send_message("\n".join(lines))
-        await edit("Головне меню:", kb_main())
+        await edit("Головне меню:", kb_main(web_app_url=(settings.telegram_web_app_url or "").strip()))
         return
 
     if data.startswith("3|"):
         base = settings.project3_api_base
         if not base:
             await chat.send_message("Немає PROJECT3_API_BASE у .env")
-            await edit("Головне меню:", kb_main())
+            await edit("Головне меню:", kb_main(web_app_url=(settings.telegram_web_app_url or "").strip()))
             return
         try:
             if data == "3|hl":
@@ -88,7 +88,7 @@ async def on_menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         base = settings.project2_api_base
         if not base:
             await chat.send_message("Немає PROJECT2_API_BASE")
-            await edit("Головне меню:", kb_main())
+            await edit("Головне меню:", kb_main(web_app_url=(settings.telegram_web_app_url or "").strip()))
             return
         try:
             if data == "2|rt":
@@ -109,7 +109,7 @@ async def on_menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         base = settings.project4_api_base
         if not base:
             await chat.send_message("Немає PROJECT4_API_BASE")
-            await edit("Головне меню:", kb_main())
+            await edit("Головне меню:", kb_main(web_app_url=(settings.telegram_web_app_url or "").strip()))
             return
         try:
             if data == "4|hl":
@@ -137,7 +137,7 @@ async def on_menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         base = settings.project5_api_base
         if not base:
             await chat.send_message("Немає PROJECT5_API_BASE")
-            await edit("Головне меню:", kb_main())
+            await edit("Головне меню:", kb_main(web_app_url=(settings.telegram_web_app_url or "").strip()))
             return
         try:
             if data == "5|hl":

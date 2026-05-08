@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>petlab-gateway</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    :root {
+      --bg: var(--tg-theme-bg-color, #0f1115);
+      --fg: var(--tg-theme-text-color, #e8eef7);
+      --hint: var(--tg-theme-hint-color, #8b93a7);
+      --btn: var(--tg-theme-button-color, #3390ec);
+      --btn-t: var(--tg-theme-button-text-color, #fff);
+      --card: rgba(255,255,255,.06);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      background: var(--bg); color: var(--fg); min-height: 100vh; padding: 12px;
+    }
+    h1 { font-size: 1.15rem; margin: 0 0 4px; }
+    .hint { font-size: 0.82rem; color: var(--hint); margin-bottom: 16px; }
+    .card {
+      background: var(--card); border-radius: 12px; padding: 12px; margin-bottom: 10px;
+      border: 1px solid rgba(255,255,255,.08);
+    }
+    .row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+    button.action {
+      flex: 1 1 45%; padding: 12px 10px; border-radius: 10px; border: none;
+      background: var(--btn); color: var(--btn-t); font-weight: 600; font-size: 0.92rem;
+    }
+    button.secondary { background: rgba(51,144,236,.35); color: var(--fg); }
+    pre {
+      white-space: pre-wrap; word-break: break-word; font-size: 0.78rem;
+      color: var(--hint); margin: 0;
+    }
+  </style>
+</head>
+<body>
+  <h1>petlab-telegram-gateway</h1>
+  <div class="hint">Mini App · локальні сервіси Project2–5</div>
+
+  <div class="card">
+    <strong>Сесія</strong>
+    <pre id="userbox">loading…</pre>
+  </div>
+
+  <div class="card">
+    <strong>Дії в бота</strong>
+    <div class="hint">Надішліть короткий сигнал — бот обробить у чаті.</div>
+    <div class="row">
+      <button class="action" type="button" id="btnStatus">📊 Стислий статус</button>
+      <button class="action secondary" type="button" id="btnPing">🏓 Ping</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <strong>Тема</strong>
+    <pre id="themebox"></pre>
+  </div>
+
+  <script>
+    const tg = window.Telegram.WebApp;
+    tg.ready();
+    tg.expand();
+
+    document.getElementById("userbox").textContent = JSON.stringify(
+      { user: tg.initDataUnsafe.user || null, receiver: tg.initDataUnsafe.receiver || null },
+      null,
+      2
+    );
+
+    document.getElementById("themebox").textContent = JSON.stringify({
+      bg: tg.themeParams.bg_color,
+      text: tg.themeParams.text_color,
+      hint: tg.themeParams.hint_color,
+      colorScheme: tg.colorScheme,
+      platform: tg.platform,
+      version: tg.version,
+    }, null, 2);
+
+    function sendPayload(obj) {
+      try {
+        tg.sendData(JSON.stringify(obj));
+      } catch (e) {
+        tg.showAlert("Не вдалося передати дані в бота: " + e);
+      }
+    }
+
+    document.getElementById("btnStatus").onclick = () => {
+      tg.HapticFeedback.impactOccurred("light");
+      sendPayload({ action: "webapp_status_digest", v: 1 });
+      tg.showPopup({ title: "Надіслано", message: "Дивіться відповідь у чаті з ботом.", buttons: [{ type: "ok" }] });
+    };
+
+    document.getElementById("btnPing").onclick = () => {
+      tg.HapticFeedback.selectionChanged();
+      sendPayload({ action: "webapp_ping", t: Date.now() });
+      tg.showAlert("Ping надіслано");
+    };
+
+    tg.MainButton.setText("Закрити панель");
+    tg.MainButton.show();
+    tg.MainButton.onClick(() => tg.close());
+
+    tg.BackButton.show();
+    tg.BackButton.onClick(() => tg.close());
+  </script>
+</body>
+</html>

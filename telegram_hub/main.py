@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+import json
 import logging
 import re
 import shlex
+import threading
 from datetime import datetime, timezone
 
-from telegram import Update
+from telegram import ReplyKeyboardRemove, Update
 from telegram.ext import (
     Application,
     CallbackQueryHandler,
@@ -16,11 +18,26 @@ from telegram.ext import (
     filters,
 )
 
+from telegram_hub.bootstrap import post_init as bootstrap_post_init
 from telegram_hub.access_control import admin_chat_ids, guard_request
 from telegram_hub.callbacks import _collect_status, on_menu_callback
 from telegram_hub.clients import BackendHub, pretty_json
 from telegram_hub.config import Settings, get_settings
-from telegram_hub.keyboards import kb_main
+from telegram_hub.keyboards import (
+    LBL_HELP,
+    LBL_HIDE,
+    LBL_INLINE,
+    LBL_P4,
+    LBL_P5,
+    LBL_PANEL,
+    LBL_STATUS,
+    LBL_WIZ,
+    REPLY_NAV_LABELS,
+    kb_main,
+    kb_p4,
+    kb_p5,
+    kb_reply,
+)
 from telegram_hub.send_utils import reply_bytes_document, reply_json, reply_text_safe
 from telegram_hub.textutil import chunk_text
 
@@ -29,6 +46,22 @@ logger = logging.getLogger("telegram_hub")
 
 TG_MAX = 4000
 
+
+class ReplyNavButtonsFilter(filters.MessageFilter):
+    def filter(self, message):  # type: ignore[override]
+        if not message or not message.text or message.text.startswith("/"):
+            return False
+        return message.text.strip() in REPLY_NAV_LABELS
+
+
+class WebAppPayloadFilter(filters.MessageFilter):
+    def filter(self, message):  # type: ignore[override]
+        return bool(message and getattr(message, "web_app_data", None) is not None)
+
+
+reply_nav_filter = ReplyNavButtonsFilter()
+web_app_payload_filter = WebAppPayloadFilter()
+
 (W_SRC, W_TXT) = range(2)
 
 
@@ -36,12 +69,74 @@ async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     settings: Settings = context.bot_data["settings"]
     if not await guard_request(update, context, settings):
         return
-    await update.message.reply_text(
-        "Важкий хаб локальних сервісів (Project1–5).\n"
-        "Меню нижче; команди див. /cmds або /help.\n\n"
-        "Обовʼязково налаштуйте PROJECT*_API_BASE у `.env`.",
-        reply_markup=kb_main(),
+    wa = (settings.telegram_web_app_url or "").strip()
+    intro = (
+        "petlab-telegram-gateway · важкий локальний хаб (Project1–5).\n\n"
+        "Знизу — reply-панель + (якщо задано HTTPS) Mini App.\n"
+        "Inline-шари в наступному повідомленні.\n\n"
+        "Налаштуйте `.env`: TELEGRAM_WEB_APP_URL (публічний HTTPS через тунель до веб-сервера)."
     )
+    await update.message.reply_text(intro, reply_markup=kb_reply(web_app_url=wa))
+    await update.message.reply_text("Inline-меню проєктів:", reply_markup=kb_main(web_app_url=wa))
+
+
+async def cmd_keyboard(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    settings: Settings = context.bot_data["settings"]
+    if not await guard_request(update, context, settings):
+        return
+    wa = (settings.telegram_web_app_url or "").strip()
+    await update.message.reply_text("Reply-клавіатура увімкнена.", reply_markup=kb_reply(web_app_url=wa))
+
+
+async def cmd_hide_kb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    settings: Settings = context.bot_data["settings"]
+    if not await guard_request(update, context, settings):
+        return
+    await update.message.reply_text("Клавіатуру прибрано.", reply_markup=ReplyKeyboardRemove())
+
+
+async def cmd_panel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    settings: Settings = context.bot_data["settings"]
+    if not await guard_request(update, context, settings):
+        return
+    url = (settings.telegram_web_app_url or "").strip()
+    if not url:
+        await update.message.reply_text(
+            "Міні-додаток не налаштований.\n"
+            "1) `python -m telegram_hub.webapp_server` (порт 8787)\n"
+            "2) Прокиньте HTTPS (Cloudflare Tunnel / ngrok).\n"
+            "3) TELEGRAM_WEB_APP_URL=https://ваш-тунель/ у `.env` і перезапустіть бота."
+        )
+        return
+    await update.message.reply_text(f"Панель (відкрий у чаті або кнопкою меню ▼):\n{url}")
+
+
+async def route_reply_navigation(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    settings: Settings = context.bot_data["settings"]
+    if not await guard_request(update, context, settings):
+        return
+    if context.user_data.get("in_wiz"):
+        await update.message.reply_text("Активний майстер /wiz — спочатку /cancel.")
+        return
+    label = (update.message.text or "").strip()
+    wa = (settings.telegram_web_app_url or "").strip()
+
+    if label == LBL_STATUS:
+        await cmd_status(update, context)
+    elif label == LBL_HELP:
+        await cmd_help(update, context)
+    elif label == LBL_INLINE:
+        await update.message.reply_text("Оберіть блок:", reply_markup=kb_main(web_app_url=wa))
+    elif label == LBL_P4:
+        await update.message.reply_text("P4 — оберіть дію:", reply_markup=kb_p4())
+    elif label == LBL_P5:
+        await update.message.reply_text("P5 — оберіть дію:", reply_markup=kb_p5())
+    elif label == LBL_WIZ:
+        await update.message.reply_text("Майстер ingest: наберіть у чаті команду /wiz (кнопки під час діалогу вимкніть через /cancel).")
+    elif label == LBL_PANEL:
+        await cmd_panel(update, context)
+    elif label == LBL_HIDE:
+        await cmd_hide_kb(update, context)
 
 
 async def cmd_help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -49,7 +144,8 @@ async def cmd_help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not await guard_request(update, context, settings):
         return
     text = (
-        "Основні:\n/start /cmds /help /whoami /status /dochelp\n\n"
+        "Основні:\n/start /cmds /help /whoami /status /dochelp /keyboard /hide_kb /panel\n\n"
+        "Інтерфейс: reply-кнопки знизу, inline-меню з /start; Mini App з меню ▼ (якщо TELEGRAM_WEB_APP_URL).\n\n"
         "━━ P1 UI E2E ━━\n/e2e_help\n\n"
         "━━ P2 Django ━━\n/p2_root /invoices\n\n"
         "━━ P3 Ops ━━\n/p3_health /p3_root\n\n"
@@ -615,7 +711,11 @@ async def wiz_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 
 
 async def wiz_src(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    context.user_data["p4_src"] = (update.message.text or "").strip()
+    raw = (update.message.text or "").strip()
+    if raw in REPLY_NAV_LABELS:
+        await update.message.reply_text("Спочатку /cancel, щоб вийти з майстра та натискати кнопки.")
+        return W_SRC
+    context.user_data["p4_src"] = raw
     await update.message.reply_text("Крок 2/2 — вставте весь текст для індексації одним повідомленням.")
     return W_TXT
 
@@ -623,8 +723,11 @@ async def wiz_src(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 async def wiz_txt(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     settings: Settings = context.bot_data["settings"]
     hub: BackendHub = context.bot_data["hub"]
-    src = context.user_data.get("p4_src")
     blob = (update.message.text or "").strip()
+    if blob in REPLY_NAV_LABELS:
+        await update.message.reply_text("Спочатку /cancel.")
+        return W_TXT
+    src = context.user_data.get("p4_src")
     try:
         if not src:
             await update.message.reply_text("Втрачено source. Запустіть /wiz знову.")
@@ -692,6 +795,27 @@ async def on_plain_document(update: Update, context: ContextTypes.DEFAULT_TYPE) 
         await update.message.reply_text(str(exc))
 
 
+async def on_web_app_data_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    settings: Settings = context.bot_data["settings"]
+    if not await guard_request(update, context, settings):
+        return
+    raw = update.message.web_app_data.data if update.message.web_app_data else "{}"
+    try:
+        payload = json.loads(raw)
+    except json.JSONDecodeError:
+        await update.message.reply_text(f"Некоректний JSON з Mini App:\n{raw[:1200]}")
+        return
+    action = payload.get("action")
+    if action == "webapp_ping":
+        await update.message.reply_text(f"Mini App ping OK · t={payload.get('t')}")
+    elif action == "webapp_status_digest":
+        await cmd_status(update, context)
+    else:
+        await update.message.reply_text(
+            f"Невідома дія Mini App: {action!r}\n" + pretty_json(payload)[:TG_MAX]
+        )
+
+
 async def cmd_unknown(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     settings: Settings = context.bot_data["settings"]
     if not await guard_request(update, context, settings):
@@ -728,6 +852,7 @@ def build_application(settings: Settings, hub: BackendHub) -> Application:
     application = (
         Application.builder()
         .token(settings.telegram_bot_token)
+        .post_init(bootstrap_post_init)
         .post_shutdown(_close_hub)
         .build()
     )
@@ -747,12 +872,17 @@ def build_application(settings: Settings, hub: BackendHub) -> Application:
     handlers = [
         conv,
         CallbackQueryHandler(on_menu_callback, pattern=r"^(m\||a\||2\||3\||4\||5\|)"),
+        MessageHandler(web_app_payload_filter, on_web_app_data_message),
+        MessageHandler(reply_nav_filter, route_reply_navigation),
         MessageHandler(filters.Document.ALL, on_plain_document),
         CommandHandler("start", cmd_start),
         CommandHandler("help", cmd_help),
         CommandHandler("cmds", cmd_cmds),
         CommandHandler("whoami", cmd_whoami),
         CommandHandler("dochelp", cmd_dochelp),
+        CommandHandler("keyboard", cmd_keyboard),
+        CommandHandler("hide_kb", cmd_hide_kb),
+        CommandHandler("panel", cmd_panel),
         CommandHandler("status", cmd_status),
         CommandHandler("e2e_help", cmd_e2e_help),
         CommandHandler("p2_root", cmd_p2_root),
@@ -799,6 +929,23 @@ def build_application(settings: Settings, hub: BackendHub) -> Application:
 
 def main() -> None:
     settings = get_settings()
+    if settings.serve_web_app_locally:
+        from telegram_hub.webapp_server import run_uvicorn_sync
+
+        threading.Thread(
+            target=run_uvicorn_sync,
+            kwargs={
+                "host": settings.web_app_bind_host,
+                "port": settings.web_app_bind_port,
+            },
+            daemon=True,
+            name="petlab-webapp",
+        ).start()
+        logger.info(
+            "Локальний Mini App: http://%s:%s/ (додайте HTTPS-тунель у TELEGRAM_WEB_APP_URL)",
+            settings.web_app_bind_host,
+            settings.web_app_bind_port,
+        )
     hub = BackendHub(max_retries=settings.http_max_retries, backoff_seconds=settings.http_backoff_seconds)
     application = build_application(settings, hub)
     application.run_polling(allowed_updates=Update.ALL_TYPES)

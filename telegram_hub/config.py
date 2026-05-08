@@ -44,6 +44,20 @@ class Settings(BaseSettings):
         description="Корінь проєкту UI E2E (Project1).",
     )
 
+    # Mini App (HTTPS). Для телефонів зазвичай потрібен публічний URL (Cloudflare Tunnel / ngrok).
+    telegram_web_app_url: str = Field(
+        default="",
+        description="Повна HTTPS-URL головної Mini App, напр. https://xxx.trycloudflare.com/",
+    )
+    telegram_web_app_menu_text: str = Field(default="Панель", description="Підпис кнопки меню WebApp")
+
+    serve_web_app_locally: bool = Field(
+        default=False,
+        description="Підняти starlette/uvicorn локально (узгодьте з тунелем).",
+    )
+    web_app_bind_host: str = "127.0.0.1"
+    web_app_bind_port: int = Field(default=8787, ge=1, le=65535)
+
 
 @lru_cache
 def get_settings() -> Settings:
